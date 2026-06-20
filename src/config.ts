@@ -1,5 +1,11 @@
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { config as loadEnv } from "dotenv";
+
+const projectRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+loadEnv({ path: join(projectRoot, ".env") });
+loadEnv({ path: join(process.cwd(), ".env") });
 
 export const WHOOP_API_BASE = "https://api.prod.whoop.com";
 export const WHOOP_AUTH_URL = `${WHOOP_API_BASE}/oauth/oauth2/auth`;
