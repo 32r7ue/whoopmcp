@@ -187,33 +187,44 @@ Upload `docs/privacy-policy.html` to Netlify, Vercel, Cloudflare Pages, or your 
 
 ## Webhook URL
 
-WHOOP webhooks require a **public HTTPS endpoint** that accepts POST requests (GitHub Pages cannot do this). This repo includes a Vercel serverless handler at [`api/webhook.ts`](api/webhook.ts).
+WHOOP webhooks require a **public HTTPS endpoint** (GitHub Pages will not work). This repo includes a Vercel handler at [`api/webhook.ts`](api/webhook.ts).
 
-### Deploy to Vercel (free, ~2 minutes)
+### Bootstrap order (webhook before client secret)
 
-1. Go to [vercel.com/new](https://vercel.com/new) and import **`32r7ue/whoopmcp`**
-2. Add environment variable: **`WHOOP_CLIENT_SECRET`** = your app client secret (same as MCP)
-3. Deploy
-4. Your webhook URL is:
+You do **not** need the client secret to deploy the webhook or create the WHOOP app. Do it in this order:
+
+| Step | Action |
+|------|--------|
+| **1** | Deploy to [vercel.com/new](https://vercel.com/new) → import **`32r7ue/whoopmcp`** → **Deploy** (skip env vars for now) |
+| **2** | Copy your URL: `https://<project>.vercel.app/api/webhook` |
+| **3** | Create the WHOOP app — paste that URL under **Webhooks**, model **V2**, plus your [privacy policy URL](#privacy-policy-hosting) |
+| **4** | WHOOP shows **Client ID** + **Client Secret** — copy both |
+| **5** | Vercel → Project → **Settings → Environment Variables** → add `WHOOP_CLIENT_SECRET` → **Redeploy** |
+| **6** | Local: copy `.env.example` → `.env`, add `WHOOP_CLIENT_ID` and `WHOOP_CLIENT_SECRET`, run `npm run auth` |
+
+The webhook accepts requests in **bootstrap mode** until you add the secret (returns `200` so the dashboard is happy). After step 5, it validates WHOOP signatures properly.
+
+### Deploy to Vercel
+
+1. [vercel.com/new](https://vercel.com/new) → import **`32r7ue/whoopmcp`**
+2. Deploy **without** environment variables first (if the app does not exist yet)
+3. Webhook URL:
 
 ```
 https://<your-vercel-project>.vercel.app/api/webhook
 ```
 
-Example: `https://whoopmcp.vercel.app/api/webhook`
+4. After you have the WHOOP client secret, add **`WHOOP_CLIENT_SECRET`** in Vercel and redeploy
 
-5. In the WHOOP Developer Dashboard → **Webhooks**:
-   - **Webhook URL:** paste the URL above
-   - **Model Version:** **V2**
-   - Click **ADD**, then save the app
-
-Verify it works by opening the URL in a browser — you should see:
+Verify in a browser — you should see:
 
 ```json
 {"ok":true,"service":"whoop-mcp-webhook","message":"POST WHOOP webhook events to this URL. Model version: v2."}
 ```
 
-WHOOP signs each webhook with your client secret; the handler validates `X-WHOOP-Signature` and returns `200`. Events are logged in Vercel function logs. The local MCP server still pulls data on demand — webhooks are only needed to satisfy the dashboard and optionally notify you of updates.
+### Where to find Client ID & Secret
+
+After saving the WHOOP app: **Developer Dashboard → your app → Client ID** (visible) and **Client Secret** (Show/Reveal, or regenerate if lost).
 
 ### Local testing (optional)
 

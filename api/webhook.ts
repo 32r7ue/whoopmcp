@@ -52,8 +52,18 @@ export default async function handler(
   }
 
   const secret = process.env.WHOOP_CLIENT_SECRET;
+  const rawBody = await readRawBody(req);
+
+  // Bootstrap mode: no secret yet (deploy Vercel first, create WHOOP app, then add secret).
   if (!secret) {
-    return res.status(500).json({ error: "WHOOP_CLIENT_SECRET is not configured on the host" });
+    console.warn("WHOOP webhook: WHOOP_CLIENT_SECRET not set — accepting without signature check");
+    try {
+      const event = JSON.parse(rawBody);
+      console.log("WHOOP webhook (bootstrap):", event.type, event.id);
+    } catch {
+      /* ignore */
+    }
+    return res.status(200).json({ received: true, bootstrap: true });
   }
 
   const signature = req.headers["x-whoop-signature"];
@@ -62,8 +72,6 @@ export default async function handler(
   if (typeof signature !== "string" || typeof timestamp !== "string") {
     return res.status(401).json({ error: "Missing WHOOP signature headers" });
   }
-
-  const rawBody = await readRawBody(req);
 
   if (!verifySignature(rawBody, timestamp, signature, secret)) {
     return res.status(401).json({ error: "Invalid webhook signature" });
