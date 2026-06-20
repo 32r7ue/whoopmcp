@@ -1,7 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
   "framework": null,
-  "rewrites": []
+  "installCommand": "npm install --ignore-scripts",
+  "outputDirectory": "public"
 }
