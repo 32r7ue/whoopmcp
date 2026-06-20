@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — WHOOP MCP</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; line-height: 1.6; color: #1a1a1a; }
+    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1.15rem; margin-top: 2rem; }
+    p, li { color: #333; }
+    .updated { color: #666; font-size: 0.9rem; }
+    a { color: #0066cc; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: June 20, 2026</p>
+  <p>This privacy policy describes how <strong>WHOOP MCP</strong> (“the Application”) handles information when you connect your WHOOP account for personal use with an MCP-compatible AI client (such as Cursor or Claude Desktop).</p>
+
+  <h2>Summary</h2>
+  <p>WHOOP MCP is a <strong>local, personal-use application</strong>. It runs on your own computer. It does not operate a cloud service, does not sell data, and does not share your WHOOP data with third parties except as required to call the official WHOOP API on your behalf.</p>
+
+  <h2>Information We Access</h2>
+  <p>With your explicit OAuth authorization, the Application may read WHOOP data you have granted access to, including:</p>
+  <ul>
+    <li>Profile information (name, email)</li>
+    <li>Body measurements (height, weight, max heart rate)</li>
+    <li>Physiological cycles (strain, heart rate, energy)</li>
+    <li>Recovery metrics (recovery score, HRV, resting heart rate, SpO2, skin temperature)</li>
+    <li>Sleep data (duration, stages, performance, efficiency)</li>
+    <li>Workout data (activity type, strain, heart rate zones, distance)</li>
+  </ul>
+  <p>The Application is <strong>read-only</strong>. It cannot modify your WHOOP account or health records.</p>
+
+  <h2>How Information Is Used</h2>
+  <p>WHOOP data is used solely to:</p>
+  <ul>
+    <li>Display your health and fitness information in your local AI assistant when you ask questions</li>
+    <li>Authenticate with the official WHOOP API using OAuth 2.0</li>
+  </ul>
+  <p>Data is not used for advertising, profiling, or analytics.</p>
+
+  <h2>Where Data Is Stored</h2>
+  <ul>
+    <li><strong>OAuth tokens</strong> are stored locally on your device at <code>~/.whoop-mcp/tokens.json</code> with restricted file permissions.</li>
+    <li><strong>WHOOP health data</strong> is fetched on demand from the WHOOP API and passed to your local MCP client. It is not persisted to a remote database by this Application.</li>
+    <li>Your AI client (Cursor, Claude Desktop, etc.) may retain conversation history according to its own privacy policy.</li>
+  </ul>
+
+  <h2>Data Sharing</h2>
+  <p>The Application does not transmit your WHOOP data to any server operated by the Application author. The only external communication is with:</p>
+  <ul>
+    <li><strong>WHOOP API</strong> (<a href="https://developer.whoop.com">developer.whoop.com</a>) — to authenticate and retrieve your authorized data</li>
+  </ul>
+  <p>We do not sell, rent, or trade your personal information.</p>
+
+  <h2>Your Choices</h2>
+  <ul>
+    <li>You choose which WHOOP OAuth scopes to grant when authorizing the Application.</li>
+    <li>You can revoke access at any time via the <code>whoop_revoke_access</code> tool or by removing the app in your WHOOP account settings.</li>
+    <li>You can delete locally stored tokens by removing <code>~/.whoop-mcp/tokens.json</code>.</li>
+  </ul>
+
+  <h2>Data Security</h2>
+  <p>OAuth client credentials are stored in your local environment configuration, not in source code. Access tokens are stored locally with file permission restrictions. You are responsible for securing your device and credentials.</p>
+
+  <h2>Children</h2>
+  <p>This Application is not intended for use by anyone under 13 years of age.</p>
+
+  <h2>Changes</h2>
+  <p>This policy may be updated from time to time. The “Last updated” date at the top will reflect the most recent revision.</p>
+
+  <h2>Contact</h2>
+  <p>For questions about this privacy policy, contact the Application operator at the email address associated with this WHOOP developer application.</p>
+
+  <hr>
+  <p><small>WHOOP MCP is an independent project and is not affiliated with, endorsed by, or sponsored by WHOOP, Inc.</small></p>
+</body>
+</html>
