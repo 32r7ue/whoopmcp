@@ -185,6 +185,47 @@ Some dashboards accept this; GitHub Pages is more reliable.
 
 Upload `docs/privacy-policy.html` to Netlify, Vercel, Cloudflare Pages, or your own site. WHOOP requires an `https://` URL.
 
+## Webhook URL
+
+WHOOP webhooks require a **public HTTPS endpoint** that accepts POST requests (GitHub Pages cannot do this). This repo includes a Vercel serverless handler at [`api/webhook.ts`](api/webhook.ts).
+
+### Deploy to Vercel (free, ~2 minutes)
+
+1. Go to [vercel.com/new](https://vercel.com/new) and import **`32r7ue/whoopmcp`**
+2. Add environment variable: **`WHOOP_CLIENT_SECRET`** = your app client secret (same as MCP)
+3. Deploy
+4. Your webhook URL is:
+
+```
+https://<your-vercel-project>.vercel.app/api/webhook
+```
+
+Example: `https://whoopmcp.vercel.app/api/webhook`
+
+5. In the WHOOP Developer Dashboard → **Webhooks**:
+   - **Webhook URL:** paste the URL above
+   - **Model Version:** **V2**
+   - Click **ADD**, then save the app
+
+Verify it works by opening the URL in a browser — you should see:
+
+```json
+{"ok":true,"service":"whoop-mcp-webhook","message":"POST WHOOP webhook events to this URL. Model version: v2."}
+```
+
+WHOOP signs each webhook with your client secret; the handler validates `X-WHOOP-Signature` and returns `200`. Events are logged in Vercel function logs. The local MCP server still pulls data on demand — webhooks are only needed to satisfy the dashboard and optionally notify you of updates.
+
+### Local testing (optional)
+
+Use [ngrok](https://ngrok.com) to expose a local server:
+
+```bash
+npx tsx webhook/local-server.ts
+ngrok http 3000
+```
+
+Use the ngrok HTTPS URL + `/webhook` in the dashboard while testing.
+
 ## License
 
 MIT
