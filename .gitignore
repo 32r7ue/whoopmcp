@@ -1,5 +1,8 @@
 node_modules/
 dist/
 .env
+.env.vercel
+.env.vercel.*
 *.log
 .DS_Store
+.vercel

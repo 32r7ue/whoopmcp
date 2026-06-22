@@ -1,44 +1,34 @@
-import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import {
   DEFAULT_SCOPES,
   getConfig,
-  TOKEN_DIR,
-  TOKEN_FILE,
-  WHOOP_API_BASE,
   WHOOP_AUTH_URL,
+  WHOOP_DEVELOPER_API_BASE,
   WHOOP_TOKEN_URL,
 } from "./config.js";
+import { consumeOAuthState, getTokenStore, saveOAuthState } from "./token-store.js";
 import type { TokenData } from "./types.js";
 
 let refreshPromise: Promise<TokenData> | null = null;
 
-async function ensureTokenDir(): Promise<void> {
-  await mkdir(TOKEN_DIR, { recursive: true, mode: 0o700 });
-}
-
 export async function loadTokens(): Promise<TokenData | null> {
-  try {
-    const raw = await readFile(TOKEN_FILE, "utf-8");
-    return JSON.parse(raw) as TokenData;
-  } catch {
-    return null;
-  }
+  return getTokenStore().load();
 }
 
 export async function saveTokens(tokens: TokenData): Promise<void> {
-  await ensureTokenDir();
-  await writeFile(TOKEN_FILE, JSON.stringify(tokens, null, 2), { mode: 0o600 });
-  await chmod(TOKEN_FILE, 0o600);
+  await getTokenStore().save(tokens);
 }
 
-function tokenResponseToData(data: {
-  access_token: string;
-  refresh_token?: string;
-  expires_in: number;
-  scope: string;
-  token_type: string;
-}, existingRefresh?: string): TokenData {
+function tokenResponseToData(
+  data: {
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+    scope: string;
+    token_type: string;
+  },
+  existingRefresh?: string,
+): TokenData {
   return {
     access_token: data.access_token,
     refresh_token: data.refresh_token ?? existingRefresh ?? "",
@@ -65,7 +55,20 @@ export function buildAuthUrl(state?: string): { url: string; state: string } {
   };
 }
 
-export async function exchangeCode(code: string): Promise<TokenData> {
+export async function startWebOAuth(): Promise<{ url: string; state: string }> {
+  const { url, state } = buildAuthUrl();
+  await saveOAuthState(state);
+  return { url, state };
+}
+
+export async function exchangeCode(code: string, state?: string): Promise<TokenData> {
+  if (state) {
+    const valid = await consumeOAuthState(state);
+    if (!valid) {
+      throw new Error("Invalid or expired OAuth state. Start authorization again.");
+    }
+  }
+
   const { clientId, clientSecret, redirectUri } = getConfig();
 
   const response = await fetch(WHOOP_TOKEN_URL, {
@@ -178,7 +181,7 @@ export async function getAuthStatus(): Promise<{
 export async function revokeAccess(): Promise<void> {
   const accessToken = await getValidAccessToken();
 
-  const response = await fetch(`${WHOOP_API_BASE}/v2/user/access`, {
+  const response = await fetch(`${WHOOP_DEVELOPER_API_BASE}/v2/user/access`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
   });
@@ -188,10 +191,5 @@ export async function revokeAccess(): Promise<void> {
     throw new Error(`Revoke failed (${response.status}): ${body}`);
   }
 
-  const { unlink } = await import("node:fs/promises");
-  try {
-    await unlink(TOKEN_FILE);
-  } catch {
-    // token file may not exist
-  }
+  await getTokenStore().delete();
 }

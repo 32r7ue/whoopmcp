@@ -1,4 +1,4 @@
-import { WHOOP_API_BASE } from "./config.js";
+import { WHOOP_DEVELOPER_API_BASE } from "./config.js";
 import { getValidAccessToken, refreshTokens } from "./auth.js";
 import type { PaginationParams } from "./types.js";
 
@@ -19,7 +19,7 @@ function buildQuery(params?: Record<string, string | number | string[] | undefin
 
 async function whoopFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const makeRequest = async (token: string) => {
-    const url = `${WHOOP_API_BASE}${path}`;
+    const url = `${WHOOP_DEVELOPER_API_BASE}${path}`;
     return fetch(url, {
       ...options,
       headers: {

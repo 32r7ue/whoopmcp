@@ -2,5 +2,8 @@
   "version": 2,
   "framework": null,
   "installCommand": "npm install --ignore-scripts",
-  "outputDirectory": "public"
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/mcp", "destination": "/api/mcp" }
+  ]
 }

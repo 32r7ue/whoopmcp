@@ -32,7 +32,9 @@ Ask questions like *"What's my recovery score today?"*, *"How did I sleep this w
    - `read:recovery`
    - `read:sleep`
    - `read:workout`
-3. Add redirect URI: `http://localhost:8080/callback`
+3. Add redirect URIs:
+   - Local: `http://localhost:8080/callback`
+   - Remote (Vercel): `https://<your-vercel-project>.vercel.app/api/oauth/callback`
 4. Set **Privacy Policy URL** — see [Privacy policy hosting](#privacy-policy-hosting) below
 5. Copy your **Client ID** and **Client Secret**
 
@@ -143,8 +145,9 @@ Once connected, try asking your AI assistant:
 
 ## Security
 
-- Tokens are stored locally at `~/.whoop-mcp/tokens.json` with file permissions 600
-- Client secrets should only be set in MCP server env vars, never committed to git
+- **Local (stdio):** Tokens are stored at `~/.whoop-mcp/tokens.json` with file permissions 600
+- **Remote (Vercel):** Tokens are stored in Upstash Redis (set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`)
+- Client secrets should only be set in environment variables, never committed to git
 - The server is read-only — it cannot modify your WHOOP data
 - Use `whoop_revoke_access` to disconnect
 
@@ -236,6 +239,63 @@ ngrok http 3000
 ```
 
 Use the ngrok HTTPS URL + `/webhook` in the dashboard while testing.
+
+## Remote MCP (Claude mobile / claude.ai)
+
+Host the MCP server on Vercel so Claude can connect via a **remote connector** (Streamable HTTP).
+
+### Bootstrap order (Vercel remote)
+
+| Step | Action |
+|------|--------|
+| **1** | Deploy to [vercel.com/new](https://vercel.com/new) → import this repo → **Deploy** |
+| **2** | Vercel → **Storage / Marketplace** → add **Upstash Redis** → link to the project |
+| **3** | Vercel → **Settings → Environment Variables** → add `WHOOP_CLIENT_ID`, `WHOOP_CLIENT_SECRET`, `WHOOP_REDIRECT_URI` (see below) → **Redeploy** |
+| **4** | WHOOP Developer Dashboard → your app → add redirect URI: `https://<project>.vercel.app/api/oauth/callback` |
+| **5** | Open `https://<project>.vercel.app/api/oauth/start` in a browser → authorize WHOOP |
+| **6** | Claude → **Settings → Connectors** → add custom MCP URL (see below) |
+
+### Required environment variables (Vercel)
+
+| Variable | Description |
+|----------|-------------|
+| `WHOOP_CLIENT_ID` | From WHOOP Developer Dashboard |
+| `WHOOP_CLIENT_SECRET` | From WHOOP Developer Dashboard |
+| `WHOOP_REDIRECT_URI` | `https://<project>.vercel.app/api/oauth/callback` |
+| `UPSTASH_REDIS_REST_URL` | Auto-set when you add Upstash Redis via Vercel Marketplace |
+| `UPSTASH_REDIS_REST_TOKEN` | Auto-set when you add Upstash Redis via Vercel Marketplace |
+
+`TOKEN_STORE` is optional — defaults to `redis` when `UPSTASH_REDIS_REST_URL` is set, otherwise `file` (local only).
+
+### Claude remote connector URL
+
+```
+https://<your-vercel-project>.vercel.app/api/mcp
+```
+
+Shorthand (via rewrite): `https://<your-vercel-project>.vercel.app/mcp`
+
+In Claude (mobile or claude.ai): **Settings → Connectors → Add custom connector** → paste the MCP URL above.
+
+### OAuth (remote)
+
+Unlike local stdio, remote auth uses HTTPS callbacks instead of `localhost:8080`:
+
+1. Visit **`/api/oauth/start`** — redirects to WHOOP login
+2. WHOOP redirects to **`/api/oauth/callback`** — tokens saved to Redis
+3. MCP tools can then query your WHOOP data
+
+Re-authenticate anytime by visiting `/api/oauth/start` again.
+
+### Architecture
+
+- `api/mcp.ts` — Streamable HTTP MCP endpoint (stateless, JSON responses)
+- `api/oauth/start.ts` — begins WHOOP OAuth flow
+- `api/oauth/callback.ts` — exchanges code and stores tokens in Redis
+- `src/server.ts` — shared tool definitions (used by stdio + HTTP)
+- `src/token-store.ts` — file storage (local) or Upstash Redis (Vercel)
+
+Local stdio MCP (`npm run dev` / Cursor / Claude Desktop) is unchanged.
 
 ## License
 

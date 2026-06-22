@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "typecheck:api": "tsc -p tsconfig.api.json",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "auth": "tsx scripts/auth.ts",
