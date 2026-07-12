@@ -2,7 +2,6 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { createWhoopMcpServer } from "../server.js";
 
 export const config = {
-  runtime: "edge",
   maxDuration: 60,
 };
 
