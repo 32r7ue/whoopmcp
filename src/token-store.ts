@@ -39,14 +39,24 @@ class FileTokenStore implements TokenStore {
 
 const TOKENS_KEY = "whoop-mcp:tokens";
 
+function getRedisCredentials(): { url: string; token: string } | null {
+  // Support both raw Upstash env var names and Vercel KV's auto-populated names
+  // (Vercel KV is Upstash-backed but exposes it under KV_REST_API_* instead).
+  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return null;
+  return { url, token };
+}
+
 async function redisCommand<T = unknown>(command: (string | number)[]): Promise<T> {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) {
+  const credentials = getRedisCredentials();
+  if (!credentials) {
     throw new Error(
-      "Upstash Redis not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.",
+      "Redis not configured. Set UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN " +
+        "(or KV_REST_API_URL/KV_REST_API_TOKEN if using Vercel KV).",
     );
   }
+  const { url, token } = credentials;
 
   const response = await fetch(url, {
     method: "POST",
@@ -85,7 +95,7 @@ class RedisTokenStore implements TokenStore {
 export function getTokenStoreKind(): "file" | "redis" {
   if (process.env.TOKEN_STORE === "redis") return "redis";
   if (process.env.TOKEN_STORE === "file") return "file";
-  if (process.env.UPSTASH_REDIS_REST_URL) return "redis";
+  if (getRedisCredentials()) return "redis";
   return "file";
 }
 
