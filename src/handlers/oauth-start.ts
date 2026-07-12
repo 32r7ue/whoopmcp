@@ -2,6 +2,7 @@ import { startWebOAuth } from "../auth.js";
 import { getConfig } from "../config.js";
 
 export const config = {
+  runtime: "edge",
   maxDuration: 30,
 };
 
