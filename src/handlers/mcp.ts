@@ -1,35 +1,29 @@
-import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createWhoopMcpServer } from "../server.js";
 
 export const config = {
   maxDuration: 60,
 };
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers":
+function setCors(res: VercelResponse): void {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
     "Content-Type, Mcp-Session-Id, MCP-Protocol-Version, Authorization",
-};
-
-function withCors(response: Response): Response {
-  const headers = new Headers(response.headers);
-  for (const [key, value] of Object.entries(corsHeaders)) {
-    headers.set(key, value);
-  }
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+  );
 }
 
-export default async function handler(request: Request): Promise<Response> {
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  setCors(res);
+
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
   }
 
-  const transport = new WebStandardStreamableHTTPServerTransport({
+  const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
   });
@@ -38,18 +32,16 @@ export default async function handler(request: Request): Promise<Response> {
 
   try {
     await server.connect(transport);
-    const response = await transport.handleRequest(request);
-    return withCors(response);
+    await transport.handleRequest(req, res, req.body);
   } catch (error) {
     console.error("MCP handler error:", error);
-    return new Response(
-      JSON.stringify({
+    if (!res.headersSent) {
+      res.status(500).json({
         jsonrpc: "2.0",
         error: { code: -32603, message: "Internal server error" },
         id: null,
-      }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
-    );
+      });
+    }
   } finally {
     await transport.close();
     await server.close();
