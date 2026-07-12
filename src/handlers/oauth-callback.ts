@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { exchangeCode } from "../auth.js";
 import { getConfig } from "../config.js";
 
@@ -5,45 +6,46 @@ export const config = {
   maxDuration: 30,
 };
 
-function htmlPage(title: string, body: string, status = 200): Response {
-  return new Response(
-    `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title></head><body>${body}</body></html>`,
-    { status, headers: { "Content-Type": "text/html; charset=utf-8" } },
-  );
+function sendHtml(res: VercelResponse, title: string, body: string, status = 200): void {
+  res
+    .status(status)
+    .setHeader("Content-Type", "text/html; charset=utf-8")
+    .send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title></head><body>${body}</body></html>`);
 }
 
-export default async function handler(request: Request): Promise<Response> {
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   try {
     getConfig();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return htmlPage("Configuration error", `<h1>Configuration error</h1><p>${message}</p>`, 500);
+    sendHtml(res, "Configuration error", `<h1>Configuration error</h1><p>${message}</p>`, 500);
+    return;
   }
 
-  const url = new URL(request.url);
-  const error = url.searchParams.get("error");
-  const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state");
+  const { error, code, state } = req.query;
+  const errorParam = typeof error === "string" ? error : undefined;
+  const codeParam = typeof code === "string" ? code : undefined;
+  const stateParam = typeof state === "string" ? state : undefined;
 
-  if (error) {
-    return htmlPage(
-      "Authorization failed",
-      `<h1>Authorization failed</h1><p>${error}</p>`,
-      400,
-    );
+  if (errorParam) {
+    sendHtml(res, "Authorization failed", `<h1>Authorization failed</h1><p>${errorParam}</p>`, 400);
+    return;
   }
 
-  if (!code || !state) {
-    return htmlPage(
+  if (!codeParam || !stateParam) {
+    sendHtml(
+      res,
       "Missing parameters",
       "<h1>Missing parameters</h1><p>Expected <code>code</code> and <code>state</code> query parameters.</p>",
       400,
     );
+    return;
   }
 
   try {
-    const tokens = await exchangeCode(code, state);
-    return htmlPage(
+    const tokens = await exchangeCode(codeParam, stateParam);
+    sendHtml(
+      res,
       "WHOOP connected",
       `<h1>Success!</h1>
 <p>Your WHOOP account is connected. You can close this tab.</p>
@@ -55,6 +57,6 @@ export default async function handler(request: Request): Promise<Response> {
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    return htmlPage("Token exchange failed", `<h1>Token exchange failed</h1><p>${message}</p>`, 500);
+    sendHtml(res, "Token exchange failed", `<h1>Token exchange failed</h1><p>${message}</p>`, 500);
   }
 }
